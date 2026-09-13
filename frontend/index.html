@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BudgetFoodAgent</title>
+  <script src="https://cdn.jsdelivr.net/npm/amazon-cognito-identity-js@6.3.12/dist/amazon-cognito-identity.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --success: #16a34a;
+      --error: #ef4444;
+      --user-msg: #1d4ed8;
+      --agent-msg: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 90vh;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    header {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #182234;
+    }
+
+    header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .badge {
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      background: rgba(37, 99, 235, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(96, 165, 250, 0.3);
+    }
+
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-muted);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary:hover {
+      background: #283548;
+    }
+
+    .view-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Auth Form */
+    .auth-wrapper {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex: 1;
+      padding: 2rem;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .auth-card h2 {
+      font-size: 1.25rem;
+      text-align: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+      background: #0f172a;
+      color: var(--text);
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 0.75rem 1.25rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 0.75rem;
+      border-radius: 6px;
+      font-size: 0.85rem;
+    }
+
+    .alert-error {
+      background: rgba(239, 68, 68, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    /* Chat View */
+    .chat-messages {
+      flex: 1;
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .message {
+      max-width: 85%;
+      padding: 0.9rem 1.1rem;
+      border-radius: 8px;
+      line-height: 1.5;
+      font-size: 0.95rem;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: var(--user-msg);
+      color: #fff;
+      border-bottom-right-radius: 2px;
+    }
+
+    .message.agent {
+      align-self: flex-start;
+      background: var(--agent-msg);
+      color: var(--text);
+      border-bottom-left-radius: 2px;
+      border: 1px solid var(--card-border);
+    }
+
+    .chat-input-area {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--card-border);
+      background: #182234;
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .chat-input-area textarea {
+      resize: none;
+      height: 52px;
+      line-height: 1.4;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .loading-spinner {
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>BudgetFoodAgent <span class="badge">Live Grounded</span></h1>
+      <div id="header-user" class="user-info hidden">
+        <span id="user-email"></span>
+        <button id="btn-logout" class="btn-secondary">Sign Out</button>
+      </div>
+    </header>
+
+    <!-- Authentication Panel -->
+    <div id="panel-auth" class="view-panel auth-wrapper">
+      <div class="auth-card">
+        <h2>Evaluator Sign In</h2>
+        <div id="auth-error" class="alert alert-error hidden"></div>
+
+        <div class="form-group">
+          <label for="input-pool-id">Cognito User Pool ID</label>
+          <input type="text" id="input-pool-id" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-client-id">Cognito App Client ID</label>
+          <input type="text" id="input-client-id" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-email">Email Address</label>
+          <input type="email" id="input-email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="input-password">Password</label>
+          <input type="password" id="input-password" required>
+        </div>
+
+        <button id="btn-login" class="btn-primary">
+          <span id="login-text">Sign In</span>
+          <span id="login-spinner" class="loading-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chat Panel -->
+    <div id="panel-chat" class="view-panel hidden">
+      <div id="chat-messages" class="chat-messages">
+        <div class="message agent">Welcome! I am BudgetFoodAgent. Tell me your budget, location, and nutritional preferences (e.g. "$40 for lunch and dinner near 350 5th Ave, New York, high-protein midday and light at night").</div>
+      </div>
+      <div class="chat-input-area">
+        <textarea id="chat-input"></textarea>
+        <button id="btn-send" class="btn-primary">
+          <span id="send-text">Send</span>
+          <span id="send-spinner" class="loading-spinner hidden"></span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Configuration & State
+      const POOL_STORAGE_KEY = "budgetfoodagent_pool_id";
+      const CLIENT_STORAGE_KEY = "budgetfoodagent_client_id";
+      let idToken = null;
+      let currentUser = null;
+
+      // DOM Elements
+      const panelAuth = document.getElementById("panel-auth");
+      const panelChat = document.getElementById("panel-chat");
+      const headerUser = document.getElementById("header-user");
+      const userEmailSpan = document.getElementById("user-email");
+      const authError = document.getElementById("auth-error");
+
+      const inputPoolId = document.getElementById("input-pool-id");
+      const inputClientId = document.getElementById("input-client-id");
+      const inputEmail = document.getElementById("input-email");
+      const inputPassword = document.getElementById("input-password");
+      const btnLogin = document.getElementById("btn-login");
+      const loginText = document.getElementById("login-text");
+      const loginSpinner = document.getElementById("login-spinner");
+      const btnLogout = document.getElementById("btn-logout");
+
+      const chatMessages = document.getElementById("chat-messages");
+      const chatInput = document.getElementById("chat-input");
+      const btnSend = document.getElementById("btn-send");
+      const sendText = document.getElementById("send-text");
+      const sendSpinner = document.getElementById("send-spinner");
+
+      // Load cached client/pool identifiers
+      inputPoolId.value = localStorage.getItem(POOL_STORAGE_KEY) || "";
+      inputClientId.value = localStorage.getItem(CLIENT_STORAGE_KEY) || "";
+
+      function setAuthLoading(loading) {
+        btnLogin.disabled = loading;
+        loginText.textContent = loading ? "Authenticating..." : "Sign In";
+        loginSpinner.classList.toggle("hidden", !loading);
+      }
+
+      function setChatLoading(loading) {
+        btnSend.disabled = loading;
+        chatInput.disabled = loading;
+        sendText.textContent = loading ? "Searching..." : "Send";
+        sendSpinner.classList.toggle("hidden", !loading);
+      }
+
+      function showAuthError(msg) {
+        authError.textContent = msg;
+        authError.classList.remove("hidden");
+      }
+
+      function clearAuthError() {
+        authError.textContent = "";
+        authError.classList.add("hidden");
+      }
+
+      function appendMessage(text, sender) {
+        const msg = document.createElement("div");
+        msg.className = "message " + sender;
+        msg.textContent = text;
+        chatMessages.appendChild(msg);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+
+      // Login handler
+      btnLogin.addEventListener("click", function () {
+        clearAuthError();
+        const poolId = inputPoolId.value.trim();
+        const clientId = inputClientId.value.trim();
+        const email = inputEmail.value.trim();
+        const password = inputPassword.value;
+
+        if (!poolId || !clientId || !email || !password) {
+          showAuthError("All credentials and configuration fields are required.");
+          return;
+        }
+
+        setAuthLoading(true);
+
+        localStorage.setItem(POOL_STORAGE_KEY, poolId);
+        localStorage.setItem(CLIENT_STORAGE_KEY, clientId);
+
+        const poolData = { UserPoolId: poolId, ClientId: clientId };
+        const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
+        const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
+          Username: email,
+          Password: password,
+        });
+
+        const userData = { Username: email, Pool: userPool };
+        const cognitoUser = new AmazonCognitoIdentity.CognitoUser(userData);
+
+        cognitoUser.authenticateUser(authDetails, {
+          onSuccess: function (session) {
+            setAuthLoading(false);
+            idToken = session.getIdToken().getJwtToken();
+            currentUser = email;
+            userEmailSpan.textContent = email;
+            headerUser.classList.remove("hidden");
+            panelAuth.classList.add("hidden");
+            panelChat.classList.remove("hidden");
+            chatInput.focus();
+          },
+          onFailure: function (err) {
+            setAuthLoading(false);
+            showAuthError(err.message || "Failed to authenticate against Cognito.");
+          },
+          newPasswordRequired: function (userAttributes) {
+            setAuthLoading(false);
+            showAuthError("New password required. Please verify permanent password setup.");
+          }
+        });
+      });
+
+      // Logout handler
+      btnLogout.addEventListener("click", function () {
+        idToken = null;
+        currentUser = null;
+        headerUser.classList.add("hidden");
+        panelChat.classList.add("hidden");
+        panelAuth.classList.remove("hidden");
+        inputPassword.value = "";
+      });
+
+      // Send prompt handler
+      async function handleSend() {
+        const prompt = chatInput.value.trim();
+        if (!prompt || !idToken) return;
+
+        appendMessage(prompt, "user");
+        chatInput.value = "";
+        setChatLoading(true);
+
+        try {
+          const response = await fetch("/chat", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": "Bearer " + idToken
+            },
+            body: JSON.stringify({ prompt: prompt })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData.error || ("Request failed with status " + response.status));
+          }
+
+          const result = await response.json();
+          const reply = typeof result === "string" ? result : (result.response || JSON.stringify(result, null, 2));
+          appendMessage(reply, "agent");
+        } catch (err) {
+          appendMessage("Error: " + err.message, "agent");
+        } finally {
+          setChatLoading(false);
+          chatInput.focus();
+        }
+      }
+
+      btnSend.addEventListener("click", handleSend);
+      chatInput.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          handleSend();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
