@@ -4,17 +4,27 @@ BudgetFoodAgent is an autonomous meal-planning agent powered by Google Vertex AI
 
 ---
 
-## 1. Core Principles & Architecture
+## 1. Core Functions
 
-The architecture enforces strict invariants:
+BudgetFoodAgent coordinates autonomous meal planning using modular tools, hooks, and verification steering:
 
-1. **Zero Hardcoded Data:** The system contains no predefined restaurants, menus, dishes, prices, addresses, or coordinates. Every recommendation originates from real-time live queries executed during the session.
-2. **Zero Credential Fallbacks:** No credentials or tokens exist in code or version control. Environment variables are loaded strictly via `os.environ["NAME"]` without default fallbacks.
-3. **Zero Fabricated Responses:** If an external source is unavailable or returns no results, the agent widens its geographic search or reports the limitation honestly.
-4. **Zero LLM Provider Fallbacks:** The agent uses Google Vertex AI with Gemini as its sole LLM backend. If the Vertex AI call fails, the exception propagates directly; the system never falls back to any secondary provider.
-5. **Deterministic Search Control:** Search radius expansion, batch sizing (15 places per batch), and safety caps (maximum 6 batches / 90 venues) are enforced by Python hooks, not left to probabilistic LLM decisions.
-6. **Session Isolation:** A new agent instance is constructed per request, backed by Amazon S3 session storage tied to the authenticated user's Cognito identity (`sub` claim).
-7. **Audit Registry:** Amazon DynamoDB maintains an immutable audit trail of queries and venue evaluations, strictly separated from answering logic.
+### Functions (Agent Tools)
+- **`split_budget`**: Deterministically divides the user's budget across meals (e.g. lunch and dinner), absorbing rounding residuals to ensure exact sums down to the cent.
+- **`find_nearby_places`**: Discovers food venues using Google Places API and filters out any venue exceeding a 10-minute walk using Google Maps travel-time calculations.
+- **`read_web_menu`**: Retrieves restaurant web pages (using Serper search fallback if needed) and extracts real dishes, descriptions, and exact prices via BeautifulSoup and lxml parsing.
+- **`log_result`**: Persists audit entries to DynamoDB (`recommendations` and `places-registry` tables) for transparency and verification.
+
+### The Agent
+- **Strands Autonomous Agent**: Powered by Google Vertex AI Gemini (`VertexGeminiModel`). It reasons over user preferences, plans necessary search batches, interprets live menu data, and composes realistic meal proposals without fabricating options.
+
+### Hooks
+- **`SearchLimitsHook`**: Deterministic lifecycle guardrail. Sets batch sizes to 15 venues, tracks previously evaluated places across batches, expands the search radius by 2 miles when published menu coverage is low (< 20%), and enforces a safety cap of 6 batches (90 places maximum) to prevent infinite loops.
+
+### Steering
+- **`LLMSteeringHandler` (Grounding Plugin)**: Audits the final response against the conversation's tool history ledger. If any dish, price, or restaurant cannot be verified against live tool outputs, the response is rejected to prevent hallucinations.
+
+### Skills & Reasoning
+- **Nutritional Classification**: The agent evaluates dish titles and ingredient descriptions directly to verify dietary criteria (e.g., high-protein, vegetarian, light meals) without relying on artificial estimations.
 
 ---
 
