@@ -117,7 +117,7 @@
 
     .auth-card {
       width: 100%;
-      max-width: 420px;
+      max-width: 400px;
       display: flex;
       flex-direction: column;
       gap: 1.25rem;
@@ -279,23 +279,13 @@
         <div id="auth-error" class="alert alert-error hidden"></div>
 
         <div class="form-group">
-          <label for="input-pool-id">Cognito User Pool ID</label>
-          <input type="text" id="input-pool-id" required>
-        </div>
-
-        <div class="form-group">
-          <label for="input-client-id">Cognito App Client ID</label>
-          <input type="text" id="input-client-id" required>
-        </div>
-
-        <div class="form-group">
           <label for="input-email">Email Address</label>
-          <input type="email" id="input-email" required>
+          <input type="email" id="input-email" required autocomplete="username">
         </div>
 
         <div class="form-group">
           <label for="input-password">Password</label>
-          <input type="password" id="input-password" required>
+          <input type="password" id="input-password" required autocomplete="current-password">
         </div>
 
         <button id="btn-login" class="btn-primary">
@@ -322,9 +312,11 @@
 
   <script>
     (function () {
-      // Configuration & State
-      const POOL_STORAGE_KEY = "budgetfoodagent_pool_id";
-      const CLIENT_STORAGE_KEY = "budgetfoodagent_client_id";
+      // Configuration injected server-side by Flask
+      const COGNITO_USER_POOL_ID = "{{COGNITO_USER_POOL_ID}}";
+      const COGNITO_APP_CLIENT_ID = "{{COGNITO_APP_CLIENT_ID}}";
+      const AWS_REGION = "{{AWS_REGION}}";
+
       let idToken = null;
       let currentUser = null;
 
@@ -335,8 +327,6 @@
       const userEmailSpan = document.getElementById("user-email");
       const authError = document.getElementById("auth-error");
 
-      const inputPoolId = document.getElementById("input-pool-id");
-      const inputClientId = document.getElementById("input-client-id");
       const inputEmail = document.getElementById("input-email");
       const inputPassword = document.getElementById("input-password");
       const btnLogin = document.getElementById("btn-login");
@@ -349,10 +339,6 @@
       const btnSend = document.getElementById("btn-send");
       const sendText = document.getElementById("send-text");
       const sendSpinner = document.getElementById("send-spinner");
-
-      // Load cached client/pool identifiers
-      inputPoolId.value = localStorage.getItem(POOL_STORAGE_KEY) || "";
-      inputClientId.value = localStorage.getItem(CLIENT_STORAGE_KEY) || "";
 
       function setAuthLoading(loading) {
         btnLogin.disabled = loading;
@@ -388,22 +374,17 @@
       // Login handler
       btnLogin.addEventListener("click", function () {
         clearAuthError();
-        const poolId = inputPoolId.value.trim();
-        const clientId = inputClientId.value.trim();
         const email = inputEmail.value.trim();
         const password = inputPassword.value;
 
-        if (!poolId || !clientId || !email || !password) {
-          showAuthError("All credentials and configuration fields are required.");
+        if (!email || !password) {
+          showAuthError("Email and password are required.");
           return;
         }
 
         setAuthLoading(true);
 
-        localStorage.setItem(POOL_STORAGE_KEY, poolId);
-        localStorage.setItem(CLIENT_STORAGE_KEY, clientId);
-
-        const poolData = { UserPoolId: poolId, ClientId: clientId };
+        const poolData = { UserPoolId: COGNITO_USER_POOL_ID, ClientId: COGNITO_APP_CLIENT_ID };
         const userPool = new AmazonCognitoIdentity.CognitoUserPool(poolData);
         const authDetails = new AmazonCognitoIdentity.AuthenticationDetails({
           Username: email,
@@ -428,7 +409,7 @@
             setAuthLoading(false);
             showAuthError(err.message || "Failed to authenticate against Cognito.");
           },
-          newPasswordRequired: function (userAttributes) {
+          newPasswordRequired: function () {
             setAuthLoading(false);
             showAuthError("New password required. Please verify permanent password setup.");
           }
