@@ -1,6 +1,6 @@
 # BudgetFoodAgent
 
-BudgetFoodAgent is an autonomous meal-planning agent powered by Google Vertex AI Gemini, Strands Agents, and hosted on Amazon EC2 with AWS persistence. It solves a real-world daily problem: deciding what to eat under strict budgetary and nutritional constraints using exclusively live, verified data.
+BudgetFoodAgent is an autonomous meal-planning agent powered by Strands Agents, Google Vertex AI Gemini, hosted on Amazon EC2 with AWS persistence. It solves a real-world daily problem: deciding what to eat under strict budgetary and nutritional constraints using exclusively live, verified data.
 
 ---
 
