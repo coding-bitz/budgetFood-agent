@@ -45,3 +45,12 @@ htmlcov/
 *.swo
 .DS_Store
 QUESTIONS.md
+
+# Infrastructure scripts
+infra/
+
+# Container & AgentCore artifacts
+.dockerignore
+.bedrock_agentcore.yaml
+.bedrock_agentcore/
+

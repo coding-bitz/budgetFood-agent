@@ -1,10 +1,13 @@
 strands-agents
 strands-agents-tools
-bedrock-agentcore
-bedrock-agentcore-starter-toolkit
+google-genai
 boto3
 requests
 beautifulsoup4
 lxml
+flask
+gunicorn
+PyJWT
+cryptography
 pytest
 pytest-asyncio
