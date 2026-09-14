@@ -9,7 +9,8 @@ from agent.tools.registry import log_result
 @pytest.fixture(autouse=True)
 def mock_env_vars(monkeypatch):
     monkeypatch.setenv("AWS_REGION", "us-east-1")
-    monkeypatch.setenv("BEDROCK_MODEL_ID", "test-model-id")
+    monkeypatch.setenv("GOOGLE_CLOUD_API_KEY", "test-google-cloud-key")
+    monkeypatch.setenv("GEMINI_MODEL_ID", "gemini-2.0-flash")
     monkeypatch.setenv("GOOGLE_PLACES_API_KEY", "test-places-key")
     monkeypatch.setenv("GOOGLE_MAPS_API_KEY", "test-maps-key")
     monkeypatch.setenv("SERPER_API_KEY", "test-serper-key")
