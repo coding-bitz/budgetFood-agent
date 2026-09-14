@@ -1,9 +1,9 @@
 import os
 from strands import Agent
-from strands.models import BedrockModel
 from strands.session.s3_session_manager import S3SessionManager
 
 from agent.hooks.search_limits import SearchLimitsHook
+from agent.model import VertexGeminiModel
 from agent.steering.grounding import grounding_handler
 from agent.tools.budget import split_budget
 from agent.tools.menu import read_web_menu
@@ -35,10 +35,7 @@ Rules you always follow:
 
 
 def build_agent(session_id: str) -> Agent:
-    model = BedrockModel(
-        model_id=os.environ["BEDROCK_MODEL_ID"],
-        region_name=os.environ["AWS_REGION"],
-    )
+    model = VertexGeminiModel()
     session_manager = S3SessionManager(
         session_id=session_id,
         bucket=os.environ["SESSIONS_S3_BUCKET"],
